@@ -1,41 +1,48 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { SystemConfig } from "../types";
+import { SystemConfig, RuleSet } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-export const generateSystemRules = async (config: SystemConfig) => {
+export const generateSystemRules = async (config: SystemConfig): Promise<RuleSet> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const prompt = `
-    Act as a World-Class Windows Systems Architect. Generate a set of "Model Rules" for a GEMINI.md persistent memory file on Windows 11.
-    
-    Environment Context:
-    - WSL2 Status: ${config.wslEnabled ? 'Enabled (Ubuntu/Debian usually)' : 'Disabled'}
+    Generate a comprehensive "Model Rules" ruleset for a Windows 11 Agentic Layer. 
+    The rules will be stored in a file called GEMINI.md in the project root to provide persistent memory for AI agents.
+
+    ENVIRONMENT:
+    - Primary OS: Windows 11
+    - WSL2: ${config.wslEnabled ? 'Enabled' : 'Disabled'}
     - Package Manager: ${config.packageManager}
-    - Root Directory: ${config.customProjectPath || '$HOME/Projects'}
-    - Primary Shell: ${config.defaultShell}
+    - Shell: ${config.defaultShell}
+    - Persona: ${config.aiPersona}
+    - Security Level: ${config.securityStrictness}
 
-    Requirements for Rule Generation:
-    ${config.includePathRules ? '1. Add Windows Path Rules: Handling of AppData, LocalAppData, System32, and User Profile paths.' : ''}
-    ${config.includeCommandRules ? '2. Add Shell Command Rules: Preferred PowerShell aliases (e.g., using "gci" instead of "ls") and script execution policies.' : ''}
-    ${config.includeWSLRules && config.wslEnabled ? '3. Add WSL Path Rules: Specific mapping instructions for /mnt/c/ to C:\\ and vice versa.' : ''}
-    ${config.refineLogging ? '4. Refine Logging Instructions: Strict templates for the Observation -> Thought -> Action loop in GEMINI.md.' : ''}
-    5. Add Package Manager Rules: Specific flags for ${config.packageManager} to ensure non-interactive, automated installs.
+    SPECIFIC REQUIREMENTS:
+    1. Windows Path Rules: Detail how to handle $env:USERPROFILE, $env:APPDATA, and $env:LOCALAPPDATA. Emphasize using environment variables over hardcoded C:\Users\ paths.
+    2. Shell Command Rules: Define preferred aliases for ${config.defaultShell}. For PowerShell, suggest 'gci' over 'ls', 'select' over 'awk' equivalent, etc. Include execution policy safety.
+    3. WSL Path Rules: ${config.wslEnabled ? 'Define mapping rules between /mnt/c/ (Linux) and C:\\ (Windows). Explain how to use "wslpath" to translate paths on the fly.' : 'N/A'}
+    4. Package Manager Rules: Provide standard command patterns for ${config.packageManager} (e.g., non-interactive flags like '-y' or '--silent').
+    5. Refined Logging: Create a specific O-T-A (Observation, Thought, Action) markdown template for GEMINI.md entries.
+    6. Key Improvements: Add rules for "Context Window Stewardship" (summarizing logs when they exceed 100 entries).
 
-    Ensure output is a valid JSON object matching the requested schema.
+    The output MUST be a JSON object adhering to the specified schema.
   `;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: prompt,
     config: {
-      systemInstruction: "You are an expert at configuring Windows 11 developer environments and AI agent workflows. Your rules should be technical, precise, and optimized for LLM consumption in a markdown file.",
+      systemInstruction: `You are a Principal DevOps Engineer and AI Architect. You specialize in Windows 11 automation and LLM-integrated workflows. 
+      Your tone should be ${config.aiPersona === 'hacker' ? 'concise and technical' : config.aiPersona === 'architect' ? 'structured and authoritative' : 'helpful and clear'}.
+      Generate rules that are machine-readable and highly effective for an AI agent to follow.`,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           title: { type: Type.STRING },
           description: { type: Type.STRING },
-          logTemplate: { type: Type.STRING, description: "A markdown template for logging tasks in GEMINI.md" },
+          logTemplate: { type: Type.STRING, description: "A markdown template for logging tasks." },
+          initScript: { type: Type.STRING, description: "A shell script to initialize the environment." },
           rules: {
             type: Type.ARRAY,
             items: {
@@ -44,16 +51,19 @@ export const generateSystemRules = async (config: SystemConfig) => {
                 category: { type: Type.STRING },
                 rule: { type: Type.STRING },
                 commandSnippet: { type: Type.STRING },
-                importance: { type: Type.STRING, enum: ['high', 'medium', 'low'] }
+                importance: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
+                contextTip: { type: Type.STRING }
               },
               required: ["category", "rule", "importance"]
             }
           }
         },
-        required: ["title", "description", "rules", "logTemplate"]
+        required: ["title", "description", "rules", "logTemplate", "initScript"]
       }
     }
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) throw new Error("Empty response from Gemini");
+  return JSON.parse(text) as RuleSet;
 };

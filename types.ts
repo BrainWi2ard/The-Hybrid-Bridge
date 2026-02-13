@@ -8,13 +8,16 @@ export interface SystemConfig {
   includeCommandRules: boolean;
   includeWSLRules: boolean;
   refineLogging: boolean;
+  aiPersona: 'architect' | 'hacker' | 'assistant';
+  securityStrictness: 'high' | 'medium' | 'low';
 }
 
 export interface GeneratedRule {
   category: string;
   rule: string;
   commandSnippet?: string;
-  importance?: 'high' | 'medium' | 'low';
+  importance: 'high' | 'medium' | 'low';
+  contextTip?: string;
 }
 
 export interface RuleSet {
@@ -22,4 +25,5 @@ export interface RuleSet {
   description: string;
   rules: GeneratedRule[];
   logTemplate: string;
+  initScript: string;
 }

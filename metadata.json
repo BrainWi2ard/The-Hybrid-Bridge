@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Windows 11 Agentic Layer Dashboard",
-  "description": "A high-performance dashboard to configure and manage your hybrid agentic PowerShell layer. Includes a Gemini-powered rule generator for persistent AI memory (GEMINI.md).",
+  "name": "Windows 11 Agentic Control Center",
+  "description": "Enterprise-grade dashboard for configuring a persistent AI memory layer (GEMINI.md) and hybrid routing on Windows 11. Featuring Gemini 3 Flash synthesis.",
   "requestFramePermissions": []
 }
